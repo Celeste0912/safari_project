@@ -1,165 +1,101 @@
 import random
-import os
-from typing import List, Type, Optional
+import time
+from typing import List, Tuple, Optional
 
-# Simulation settings
-SIZE: int = 20
-ZEBRA_COUNT: int = 20
-LION_COUNT: int = 5
-LION_HUNGER_LIMIT: int = 5  # 狮子饥饿上限（步）
+class Creature:
+    """
+    생물 객체로, 위치, 나이, 수명을 가짐
 
-# Display symbols
-EMPTY_SYMBOL: str = '-'
-ZEBRA_SYMBOL: str = 'O'
-LION_SYMBOL: str = 'X'
-
-
-def clear_screen() -> None:
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-class Cell:
-    """地图单元格：仅管理动物"""
-    def __init__(self) -> None:
-        self.animal: Optional[Animal] = None
-
-class Animal:
-    """基类：管理位置、年龄、饥饿与行动"""
-    def __init__(self, x: int, y: int) -> None:
+    속성:
+        id (int): 생물의 고유 ID
+        x (float): x 좌표
+        y (float): y 좌표
+        age (int): 현재 생존한 스텝 수
+        lifetime (int): 최대 수명 (스텝 수 기준)
+    """
+    def __init__(self, id: int, x: float, y: float, lifetime: int) -> None:
+        self.id = id
         self.x = x
         self.y = y
         self.age = 0
-        self.hunger = 0  # 仅用于狮子
+        self.lifetime = lifetime
 
-    def move_to(self, nx: int, ny: int, world: 'World') -> None:
-        world.grid[self.x][self.y].animal = None
-        self.x, self.y = nx, ny
-        world.grid[nx][ny].animal = self
+    def step(self, bounds: Tuple[float, float]) -> None:
+        """
+        랜덤 이동 규칙에 따라 위치를 갱신하고 나이를 증가시킴
 
-    def possible_moves(self, world: 'World') -> List[tuple]:
-        moves = []
-        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nx, ny = self.x+dx, self.y+dy
-            if 0 <= nx < SIZE and 0 <= ny < SIZE:
-                moves.append((nx,ny))
-        random.shuffle(moves)
-        return moves
-
-    def act(self, world: 'World') -> None:
-        raise NotImplementedError
-
-class Zebra(Animal):
-    """斑马：移动、繁殖"""
-    def act(self, world: 'World') -> None:
+        매개변수:
+            bounds (Tuple[float, float]): 세계의 너비와 높이
+        """
+        dx = random.uniform(-1, 1)
+        dy = random.uniform(-1, 1)
+        self.x = max(0, min(bounds[0], self.x + dx))
+        self.y = max(0, min(bounds[1], self.y + dy))
         self.age += 1
 
-        # 移动
-        for nx, ny in self.possible_moves(world):
-            if world.grid[nx][ny].animal is None:
-                self.move_to(nx, ny, world)
-                break
-
-        # 繁殖：每4步一次
-        if self.age % 4 == 0:
-            for nx, ny in self.possible_moves(world):
-                if world.grid[nx][ny].animal is None:
-                    baby = Zebra(nx, ny)
-                    world.grid[nx][ny].animal = baby
-                    world.new_animals.append(baby)
-                    break
-
-class Lion(Animal):
-    """狮子：捕食斑马、移动、繁殖、饥饿死亡"""
-    def act(self, world: 'World') -> None:
-        self.age += 1
-        self.hunger += 1
-
-        # 捕食斑马
-        hunted = False
-        for nx, ny in self.possible_moves(world):
-            if isinstance(world.grid[nx][ny].animal, Zebra):
-                world.grid[nx][ny].animal = None
-                self.move_to(nx, ny, world)
-                self.hunger = 0
-                hunted = True
-                break
-
-        # 未捕食则移动
-        if not hunted:
-            for nx, ny in self.possible_moves(world):
-                if world.grid[nx][ny].animal is None:
-                    self.move_to(nx, ny, world)
-                    break
-
-        # 饥饿死亡
-        if self.hunger >= LION_HUNGER_LIMIT:
-            world.grid[self.x][self.y].animal = None
-            return
-
-        # 繁殖：每6步一次
-        if self.age % 6 == 0:
-            for nx, ny in self.possible_moves(world):
-                if world.grid[nx][ny].animal is None:
-                    baby = Lion(nx, ny)
-                    world.grid[nx][ny].animal = baby
-                    world.new_animals.append(baby)
-                    break
+    def is_dead(self) -> bool:
+        """
+        생물이 수명을 다했는지 여부를 반환
+        """
+        return self.age >= self.lifetime
 
 class World:
-    """维护整个生态系统的网格和动物列表"""
-    def __init__(self) -> None:
-        self.grid = [[Cell() for _ in range(SIZE)] for _ in range(SIZE)]
-        self.animals: List[Animal] = []
-        self.new_animals: List[Animal] = []
-        self.spawn(Zebra, ZEBRA_COUNT)
-        self.spawn(Lion, LION_COUNT)
+    """
+    세계 환경으로, 모든 생물의 생성, 업데이트, 렌더링을 관리함
 
-    def spawn(self, cls: Type[Animal], count: int) -> None:
-        for _ in range(count):
-            while True:
-                x, y = random.randrange(SIZE), random.randrange(SIZE)
-                if self.grid[x][y].animal is None:
-                    a = cls(x, y)
-                    self.grid[x][y].animal = a
-                    self.animals.append(a)
-                    break
+    속성:
+        width (float): 세계의 너비
+        height (float): 세계의 높이
+        creatures (List[Creature]): 현재 생물 리스트
+        next_id (int): 다음 생물의 ID
+    """
+    def __init__(self, width: float, height: float) -> None:
+        self.width = width
+        self.height = height
+        self.creatures: List[Creature] = []
+        self.next_id = 1
+
+    def spawn(self, n: int, lifetime: int = 20) -> None:
+        """
+        무작위 위치에 n개의 생물을 생성
+
+        매개변수:
+            n (int): 생물 수
+            lifetime (int): 각 생물의 수명
+        """
+        for _ in range(n):
+            x = random.uniform(0, self.width)
+            y = random.uniform(0, self.height)
+            self.creatures.append(Creature(self.next_id, x, y, lifetime))
+            self.next_id += 1
 
     def step(self) -> None:
-        random.shuffle(self.animals)
-        self.new_animals = []
-        for a in list(self.animals):
-            if self.grid[a.x][a.y].animal is a:
-                a.act(self)
-        self.animals = [c.animal for row in self.grid for c in row if c.animal]
-        self.animals.extend(self.new_animals)
+        """
+        세계를 한 스텝 진행시킴: 모든 생물을 업데이트하고 죽은 생물은 제거
+        """
+        for creature in self.creatures:
+            creature.step((self.width, self.height))
+        self.creatures = [c for c in self.creatures if not c.is_dead()]
 
-    def display(self) -> None:
-        # 顶部边框
-        print('   +' + '---'*SIZE + '+')
-        # 列号行
-        print('   | ' + ' '.join(f'{i:02}' for i in range(SIZE)) + ' |')
-        # 中间边框
-        print('   +' + '---'*SIZE + '+')
-        # 内容行
-        for i, row in enumerate(self.grid):
-            line = f'{i:02} | ' + ' '.join(
-                ZEBRA_SYMBOL if isinstance(cell.animal, Zebra)
-                else LION_SYMBOL if isinstance(cell.animal, Lion)
-                else EMPTY_SYMBOL
-                for cell in row
-            ) + ' |'
-            print(line)
-        # 底部边框
-        print('   +' + '---'*SIZE + '+')
+    def render(self) -> None:
+        """
+        현재 모든 생물의 위치를 콘솔에 출력
+        """
+        print(f"스텝 진행 | 생물 수: {len(self.creatures)}")
+        for c in self.creatures:
+            print(f"  ID={c.id}, 위치=({c.x:.1f}, {c.y:.1f}), 나이={c.age}")
+        print('-' * 40)
 
 if __name__ == '__main__':
-    world = World()
-    year = 0
-    while True:
-        clear_screen()
-        print(f"Year {year}")
-        world.display()
-        cmd = input("Enter to continue, 'q' to quit: ")
-        if cmd.lower().startswith('q'):
-            break
+    WIDTH, HEIGHT = 50.0, 20.0
+    world = World(WIDTH, HEIGHT)
+    world.spawn(n=5, lifetime=15)
+
+    STEPS = 30
+    INTERVAL = 0.5  # 초
+    for step in range(STEPS):
+        world.render()
         world.step()
-        year += 1
+        time.sleep(INTERVAL)
+
+    print("시뮬레이션 종료.")

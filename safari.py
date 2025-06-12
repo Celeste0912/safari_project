@@ -2,7 +2,7 @@ import random
 import os
 
 # 시뮬레이션 설정
-SIZE = 20
+SIZE = 50
 ZEBRA_COUNT = 20
 LION_COUNT = 5
 

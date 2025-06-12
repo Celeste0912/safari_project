@@ -1,46 +1,54 @@
 import random
 import os
+time
+from typing import List, Type
 
-# 시뮬레이션 설정
-SIZE = 20
-ZEBRA_COUNT = 20
-LION_COUNT = 5
+# Simulation settings
+SIZE: int = 20
+ZEBRA_COUNT: int = 20
+LION_COUNT: int = 5
 
-# 출력 기호
-GRASS = '.'
-DIRT = '-'
-ZEBRA_SYMBOL = 'O'
-LION_SYMBOL = 'X'
+# Display symbols
+EMPTY_SYMBOL: str = '.'
+ZEBRA_SYMBOL: str = 'O'
+LION_SYMBOL: str = 'X'
 
-def clear_screen():
+
+def clear_screen() -> None:
+    """
+    清理终端屏幕
+    """
     os.system('cls' if os.name == 'nt' else 'clear')
 
-class Cell:
-    def __init__(self):
-        self.has_grass = True
-        self.animal = None
-        self.grass_regrow_timer = 0
 
-    def step(self):
-        if not self.has_grass:
-            self.grass_regrow_timer -= 1
-            if self.grass_regrow_timer <= 0:
-                self.has_grass = True
+class Cell:
+    """
+    地图单元格：管理动物
+
+    Attributes:
+        animal: Optional[Animal] 当前单元格的动物
+    """
+    def __init__(self) -> None:
+        self.animal = None
+
 
 class Animal:
-    def __init__(self, x, y):
+    """
+    基类：管理基础属性与移动规则
+    """
+    def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
         self.age = 0
         self.hungry = 0
 
-    def move_to(self, new_x, new_y, world):
+    def move_to(self, new_x: int, new_y: int, world: 'World') -> None:
         world.grid[self.x][self.y].animal = None
         self.x, self.y = new_x, new_y
-        world.grid[self.x][self.y].animal = self
+        world.grid[new_x][new_y].animal = self
 
-    def possible_moves(self, world):
-        directions = [(-1,0),(1,0),(0,-1),(0,1)]
+    def possible_moves(self, world: 'World') -> List[tuple]:
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         moves = []
         for dx, dy in directions:
             nx, ny = self.x + dx, self.y + dy
@@ -49,140 +57,133 @@ class Animal:
         random.shuffle(moves)
         return moves
 
+    def act(self, world: 'World') -> None:
+        raise NotImplementedError
+
+
 class Zebra(Animal):
-    def act(self, world):
+    """斑马：移动、繁殖、饥饿死亡"""
+    def act(self, world: 'World') -> None:
         self.age += 1
         self.hungry += 1
 
-        # 이동 및 풀 먹기
         for nx, ny in self.possible_moves(world):
-            cell = world.grid[nx][ny]
-            if cell.animal is None:
+            if world.grid[nx][ny].animal is None:
                 self.move_to(nx, ny, world)
-                if cell.has_grass:
-                    self.hungry = 0
-                    cell.has_grass = False
-                    cell.grass_regrow_timer = 1
                 break
 
-        # 굶어 죽음
+        # 饥饿死亡
         if self.hungry >= 3:
             world.grid[self.x][self.y].animal = None
             return
 
-        # 번식
-        if self.age >= 3:
+        # 繁殖
+        if self.age >= 5:
             for nx, ny in self.possible_moves(world):
-                cell = world.grid[nx][ny]
-                if cell.animal is None:
+                if world.grid[nx][ny].animal is None:
                     baby = Zebra(nx, ny)
-                    cell.animal = baby
+                    world.grid[nx][ny].animal = baby
                     world.new_animals.append(baby)
                     break
 
+
 class Lion(Animal):
-    def act(self, world):
+    """狮子：捕食斑马、繁殖、饥饿死亡"""
+    def act(self, world: 'World') -> None:
         self.age += 1
         self.hungry += 1
         moved = False
 
-        # 사냥 (Zebra 우선)
+        # 捕食斑马
         for nx, ny in self.possible_moves(world):
-            cell = world.grid[nx][ny]
-            if isinstance(cell.animal, Zebra):
-                cell.animal = None
+            if isinstance(world.grid[nx][ny].animal, Zebra):
+                world.grid[nx][ny].animal = None
                 self.move_to(nx, ny, world)
                 self.hungry = 0
                 moved = True
                 break
 
-        # 사냥 실패 시 빈칸 이동
+        # 随机移动
         if not moved:
             for nx, ny in self.possible_moves(world):
-                cell = world.grid[nx][ny]
-                if cell.animal is None:
+                if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
 
-        # 굶어 죽음
+        # 饥饿死亡
         if self.hungry >= 5:
             world.grid[self.x][self.y].animal = None
             return
 
-        # 번식
-        if self.age >= 5:
+        # 繁殖
+        if self.age >= 8:
             for nx, ny in self.possible_moves(world):
-                cell = world.grid[nx][ny]
-                if cell.animal is None:
+                if world.grid[nx][ny].animal is None:
                     baby = Lion(nx, ny)
-                    cell.animal = baby
+                    world.grid[nx][ny].animal = baby
                     world.new_animals.append(baby)
                     break
 
+
 class World:
-    def __init__(self):
-        self.grid = [[Cell() for _ in range(SIZE)] for _ in range(SIZE)]
+    """管理整个生态系统"""
+    def __init__(self) -> None:
+        self.grid: List[List[Cell]] = [[Cell() for _ in range(SIZE)] for _ in range(SIZE)]
         self.animals = []
         self.new_animals = []
         self.spawn_animals(Zebra, ZEBRA_COUNT)
         self.spawn_animals(Lion, LION_COUNT)
 
-    def spawn_animals(self, animal_type, count):
+    def spawn_animals(self, animal_type: Type[Animal], count: int) -> None:
         for _ in range(count):
             while True:
-                x = random.randint(0, SIZE-1)
-                y = random.randint(0, SIZE-1)
+                x = random.randint(0, SIZE - 1)
+                y = random.randint(0, SIZE - 1)
                 if self.grid[x][y].animal is None:
-                    a = animal_type(x, y)
-                    self.grid[x][y].animal = a
-                    self.animals.append(a)
+                    animal = animal_type(x, y)
+                    self.grid[x][y].animal = animal
+                    self.animals.append(animal)
                     break
 
-    def step(self):
+    def step(self) -> None:
         random.shuffle(self.animals)
         self.new_animals = []
 
-        for row in self.grid:
-            for cell in row:
-                cell.step()
-
-        for animal in self.animals[:]:
+        for animal in list(self.animals):
             if self.grid[animal.x][animal.y].animal is animal:
                 animal.act(self)
 
-        self.animals = [a for row in self.grid for cell in row if (a := cell.animal)]
-        self.animals += self.new_animals
+        self.animals = [cell.animal for row in self.grid for cell in row if cell.animal]
+        self.animals.extend(self.new_animals)
 
-    def display(self):
-        # 열 번호 출력
-        col_header = '     ' + ' '.join(f'{i:02}' for i in range(SIZE))
-        print(col_header)
-        print('   +' + '-' * (SIZE * 3) + '+')
-        for row_idx, row in enumerate(self.grid):
-            line = f'{row_idx:02} |'
+    def display(self) -> None:
+        header = '   ' + ' '.join(f'{i:02}' for i in range(SIZE))
+        print(header)
+        print('  +' + '---'*SIZE + '+')
+        for i, row in enumerate(self.grid):
+            line = f'{i:02} |'
             for cell in row:
                 if isinstance(cell.animal, Zebra):
                     line += f' {ZEBRA_SYMBOL} '
                 elif isinstance(cell.animal, Lion):
                     line += f' {LION_SYMBOL} '
-                elif cell.has_grass:
-                    line += f' {GRASS} '
                 else:
-                    line += f' {DIRT} '
-            line += '|'
+                    line += f' {EMPTY_SYMBOL} '
+            line += ' |'
             print(line)
-        print('   +' + '-' * (SIZE * 3) + '+')
+        print('  +' + '---'*SIZE + '+')
 
-# 메인 실행부
+
 if __name__ == '__main__':
     world = World()
-    year = 1
+    year = 0
     while True:
         clear_screen()
         print(f"Year {year}")
         world.display()
-        user_input = input("Press Enter to continue, or 'q' to quit: ")
-        if user_input.strip().lower() == 'q':
+        cmd = input("Enter to continue, 'q' to quit: ")
+        if cmd.lower().startswith('q'):
+            print("Simulation ended.")
             break
         world.step()
         year += 1

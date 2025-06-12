@@ -1,12 +1,11 @@
 import random
 import os
-time
-from typing import List, Type
+from typing import List, Type, Optional
 
-# 시뮬레이션 설정
-SIZE = 50
-ZEBRA_COUNT = 20
-LION_COUNT = 5
+# Simulation settings
+SIZE: int = 20
+ZEBRA_COUNT: int = 20
+LION_COUNT: int = 5
 
 # Display symbols
 EMPTY_SYMBOL: str = '.'
@@ -29,7 +28,7 @@ class Cell:
         animal: Optional[Animal] 当前单元格的动物
     """
     def __init__(self) -> None:
-        self.animal = None
+        self.animal: Optional[Animal] = None
 
 
 class Animal:
@@ -129,8 +128,8 @@ class World:
     """管理整个生态系统"""
     def __init__(self) -> None:
         self.grid: List[List[Cell]] = [[Cell() for _ in range(SIZE)] for _ in range(SIZE)]
-        self.animals = []
-        self.new_animals = []
+        self.animals: List[Animal] = []
+        self.new_animals: List[Animal] = []
         self.spawn_animals(Zebra, ZEBRA_COUNT)
         self.spawn_animals(Lion, LION_COUNT)
 

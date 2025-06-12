@@ -1,101 +1,87 @@
 import random
-import time
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
-class Creature:
-    """
-    생물 객체로, 위치, 나이, 수명을 가짐
+EMPTY = '.'
+ZEBRA = 'Z'
+LION = 'L'
 
-    속성:
-        id (int): 생물의 고유 ID
-        x (float): x 좌표
-        y (float): y 좌표
-        age (int): 현재 생존한 스텝 수
-        lifetime (int): 최대 수명 (스텝 수 기준)
-    """
-    def __init__(self, id: int, x: float, y: float, lifetime: int) -> None:
-        self.id = id
-        self.x = x
-        self.y = y
-        self.age = 0
-        self.lifetime = lifetime
+DIRECTIONS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
-    def step(self, bounds: Tuple[float, float]) -> None:
-        """
-        랜덤 이동 규칙에 따라 위치를 갱신하고 나이를 증가시킴
+def in_bounds(x: int, y: int, rows: int, cols: int) -> bool:
+    return 0 <= x < rows and 0 <= y < cols
 
-        매개변수:
-            bounds (Tuple[float, float]): 세계의 너비와 높이
-        """
-        dx = random.uniform(-1, 1)
-        dy = random.uniform(-1, 1)
-        self.x = max(0, min(bounds[0], self.x + dx))
-        self.y = max(0, min(bounds[1], self.y + dy))
-        self.age += 1
+def display_grid(grid: List[List[str]]) -> None:
+    for row in grid:
+        print(''.join(row))
+    print('-' * len(grid[0]))
 
-    def is_dead(self) -> bool:
-        """
-        생물이 수명을 다했는지 여부를 반환
-        """
-        return self.age >= self.lifetime
+def find_move(entity: str, x: int, y: int, grid: List[List[str]]) -> Tuple[int, int]:
+    rows, cols = len(grid), len(grid[0])
+    possible_moves = []
 
-class World:
-    """
-    세계 환경으로, 모든 생물의 생성, 업데이트, 렌더링을 관리함
+    if entity == ZEBRA:
+        # 얼룩말: 빈칸으로만 이동 가능
+        for dx, dy in DIRECTIONS:
+            nx, ny = x + dx, y + dy
+            if in_bounds(nx, ny, rows, cols) and grid[nx][ny] == EMPTY:
+                possible_moves.append((nx, ny))
 
-    속성:
-        width (float): 세계의 너비
-        height (float): 세계의 높이
-        creatures (List[Creature]): 현재 생물 리스트
-        next_id (int): 다음 생물의 ID
-    """
-    def __init__(self, width: float, height: float) -> None:
-        self.width = width
-        self.height = height
-        self.creatures: List[Creature] = []
-        self.next_id = 1
+    elif entity == LION:
+        # 사자: 먼저 얼룩말 찾기
+        for dx, dy in DIRECTIONS:
+            nx, ny = x + dx, y + dy
+            if in_bounds(nx, ny, rows, cols) and grid[nx][ny] == ZEBRA:
+                possible_moves.append((nx, ny))
+        # 얼룩말 없으면 빈칸 이동
+        if not possible_moves:
+            for dx, dy in DIRECTIONS:
+                nx, ny = x + dx, y + dy
+                if in_bounds(nx, ny, rows, cols) and grid[nx][ny] == EMPTY:
+                    possible_moves.append((nx, ny))
 
-    def spawn(self, n: int, lifetime: int = 20) -> None:
-        """
-        무작위 위치에 n개의 생물을 생성
+    return random.choice(possible_moves) if possible_moves else (x, y)
 
-        매개변수:
-            n (int): 생물 수
-            lifetime (int): 각 생물의 수명
-        """
-        for _ in range(n):
-            x = random.uniform(0, self.width)
-            y = random.uniform(0, self.height)
-            self.creatures.append(Creature(self.next_id, x, y, lifetime))
-            self.next_id += 1
+def simulate(grid: List[List[str]], steps: int) -> None:
+    rows, cols = len(grid), len(grid[0])
 
-    def step(self) -> None:
-        """
-        세계를 한 스텝 진행시킴: 모든 생물을 업데이트하고 죽은 생물은 제거
-        """
-        for creature in self.creatures:
-            creature.step((self.width, self.height))
-        self.creatures = [c for c in self.creatures if not c.is_dead()]
+    for step in range(steps):
+        print(f"Step {step + 1}")
+        moved = [[False] * cols for _ in range(rows)]
+        new_grid = [row.copy() for row in grid]
 
-    def render(self) -> None:
-        """
-        현재 모든 생물의 위치를 콘솔에 출력
-        """
-        print(f"스텝 진행 | 생물 수: {len(self.creatures)}")
-        for c in self.creatures:
-            print(f"  ID={c.id}, 위치=({c.x:.1f}, {c.y:.1f}), 나이={c.age}")
-        print('-' * 40)
+        # 1단계: 얼룩말 이동
+        for x in range(rows):
+            for y in range(cols):
+                if grid[x][y] == ZEBRA and not moved[x][y]:
+                    nx, ny = find_move(ZEBRA, x, y, grid)
+                    if (nx, ny) != (x, y):
+                        new_grid[nx][ny] = ZEBRA
+                        new_grid[x][y] = EMPTY
+                        moved[nx][ny] = True
 
-if __name__ == '__main__':
-    WIDTH, HEIGHT = 50.0, 20.0
-    world = World(WIDTH, HEIGHT)
-    world.spawn(n=5, lifetime=15)
+        grid = [row.copy() for row in new_grid]
 
-    STEPS = 30
-    INTERVAL = 0.5  # 초
-    for step in range(STEPS):
-        world.render()
-        world.step()
-        time.sleep(INTERVAL)
+        # 2단계: 사자 이동
+        moved = [[False] * cols for _ in range(rows)]
+        for x in range(rows):
+            for y in range(cols):
+                if grid[x][y] == LION and not moved[x][y]:
+                    nx, ny = find_move(LION, x, y, grid)
+                    if (nx, ny) != (x, y):
+                        new_grid[nx][ny] = LION
+                        new_grid[x][y] = EMPTY
+                        moved[nx][ny] = True
 
-    print("시뮬레이션 종료.")
+        grid = new_grid
+        display_grid(grid)
+
+# 예시 실행
+initial_grid = [
+    list("..Z.."),
+    list(".ZLZ."),
+    list("..Z.."),
+    list("..L.."),
+    list("....."),
+]
+
+simulate(initial_grid, steps=5)

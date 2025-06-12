@@ -6,6 +6,8 @@ from typing import List, Type, Optional
 SIZE: int = 20
 ZEBRA_COUNT: int = 20
 LION_COUNT: int = 5
+ZEBRA_MAX_AGE: int = 20  # 斑马最大存活年数
+LION_MAX_AGE: int = 25  # 狮子最大存活年数
 
 # Display symbols
 EMPTY_SYMBOL: str = '.'
@@ -39,7 +41,6 @@ class Animal:
         self.x = x
         self.y = y
         self.age = 0
-        self.hungry = 0
 
     def move_to(self, new_x: int, new_y: int, world: 'World') -> None:
         world.grid[self.x][self.y].animal = None
@@ -61,23 +62,23 @@ class Animal:
 
 
 class Zebra(Animal):
-    """斑马：移动、繁殖、饥饿死亡"""
+    """斑马：移动、繁殖、基于年龄死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        self.hungry += 1
 
+        # 年龄死亡
+        if self.age >= ZEBRA_MAX_AGE:
+            world.grid[self.x][self.y].animal = None
+            return
+
+        # 移动
         for nx, ny in self.possible_moves(world):
             if world.grid[nx][ny].animal is None:
                 self.move_to(nx, ny, world)
                 break
 
-        # 饥饿死亡
-        if self.hungry >= 3:
-            world.grid[self.x][self.y].animal = None
-            return
-
         # 繁殖
-        if self.age >= 5:
+        if self.age > 2 and self.age % 3 == 0:  # 每3年繁殖一次
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     baby = Zebra(nx, ny)
@@ -87,35 +88,33 @@ class Zebra(Animal):
 
 
 class Lion(Animal):
-    """狮子：捕食斑马、繁殖、饥饿死亡"""
+    """狮子：捕食斑马、移动、繁殖、基于年龄死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        self.hungry += 1
-        moved = False
+
+        # 年龄死亡
+        if self.age >= LION_MAX_AGE:
+            world.grid[self.x][self.y].animal = None
+            return
 
         # 捕食斑马
+        hunted = False
         for nx, ny in self.possible_moves(world):
             if isinstance(world.grid[nx][ny].animal, Zebra):
                 world.grid[nx][ny].animal = None
                 self.move_to(nx, ny, world)
-                self.hungry = 0
-                moved = True
+                hunted = True
                 break
 
-        # 随机移动
-        if not moved:
+        # 随机移动（即使捕食成功）
+        if not hunted:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
 
-        # 饥饿死亡
-        if self.hungry >= 5:
-            world.grid[self.x][self.y].animal = None
-            return
-
         # 繁殖
-        if self.age >= 8:
+        if self.age > 4 and self.age % 5 == 0:  # 每5年繁殖一次
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     baby = Lion(nx, ny)

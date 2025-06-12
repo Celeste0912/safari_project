@@ -6,8 +6,6 @@ from typing import List, Type, Optional
 SIZE: int = 20
 ZEBRA_COUNT: int = 20
 LION_COUNT: int = 5
-ZEBRA_MAX_AGE: int = 20  # 斑马最大存活年数
-LION_MAX_AGE: int = 25  # 狮子最大存活年数
 LION_HUNGER_LIMIT: int = 5  # 狮子饥饿上限（步）
 
 # Display symbols
@@ -24,17 +22,13 @@ def clear_screen() -> None:
 
 
 class Cell:
-    """
-    地图单元格：管理动物
-    """
+    """地图单元格：管理动物"""
     def __init__(self) -> None:
         self.animal: Optional[Animal] = None
 
 
 class Animal:
-    """
-    基类：管理基础属性与移动规则
-    """
+    """基类：管理基础属性与移动规则"""
     def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
@@ -61,14 +55,9 @@ class Animal:
 
 
 class Zebra(Animal):
-    """斑马：移动、繁殖、基于年龄死亡"""
+    """斑马：移动、繁殖"""
     def act(self, world: 'World') -> None:
         self.age += 1
-
-        # 年龄死亡
-        if self.age >= ZEBRA_MAX_AGE:
-            world.grid[self.x][self.y].animal = None
-            return
 
         # 移动
         for nx, ny in self.possible_moves(world):
@@ -76,7 +65,7 @@ class Zebra(Animal):
                 self.move_to(nx, ny, world)
                 break
 
-        # 繁殖：年龄大于2岁且每3年一次
+        # 繁殖：年龄大于2步且每3步一次
         if self.age > 2 and self.age % 3 == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -87,15 +76,10 @@ class Zebra(Animal):
 
 
 class Lion(Animal):
-    """狮子：捕食斑马、移动、繁殖、基于年龄和饥饿的死亡"""
+    """狮子：捕食斑马、移动、繁殖、饥饿死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
         self.hungry += 1
-
-        # 年龄死亡
-        if self.age >= LION_MAX_AGE:
-            world.grid[self.x][self.y].animal = None
-            return
 
         # 饥饿死亡
         if self.hungry >= LION_HUNGER_LIMIT:
@@ -112,14 +96,14 @@ class Lion(Animal):
                 hunted = True
                 break
 
-        # 随机移动
+        # 没捕食则随机移动
         if not hunted:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
 
-        # 繁殖：年龄大于4岁且每5年一次
+        # 繁殖：年龄大于4步且每5步一次
         if self.age > 4 and self.age % 5 == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:

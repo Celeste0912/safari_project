@@ -133,15 +133,14 @@ class World:
         self.animals.extend(self.new_animals)
 
     def display(self) -> None:
-        # 打印列号及顶边框
-        header = '   +' + '---'*SIZE + '+'
-        print(header)
+        # 顶部边框
+        print('   +' + '---'*SIZE + '+')
         # 列号行
-        cols = '   | ' + ' '.join(f'{i:02}' for i in range(SIZE)) + ' |'
-        print(cols)
-        print(header)
+        print('   | ' + ' '.join(f'{i:02}' for i in range(SIZE)) + ' |')
+        # 中间边框
+        print('   +' + '---'*SIZE + '+')
+        # 内容行
         for i, row in enumerate(self.grid):
-            # 每行带左右边框
             line = f'{i:02} | ' + ' '.join(
                 ZEBRA_SYMBOL if isinstance(cell.animal, Zebra)
                 else LION_SYMBOL if isinstance(cell.animal, Lion)
@@ -149,7 +148,8 @@ class World:
                 for cell in row
             ) + ' |'
             print(line)
-        print(header)
+        # 底部边框
+        print('   +' + '---'*SIZE + '+')
 
 if __name__ == '__main__':
     world = World()

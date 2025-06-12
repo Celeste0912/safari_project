@@ -17,7 +17,7 @@ def clear_screen():
 
 class Cell:
     def __init__(self):
-        self.has_grass = False  # 초기엔 황무지
+        self.has_grass = True
         self.animal = None
         self.grass_regrow_timer = 0
 

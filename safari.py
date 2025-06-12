@@ -3,10 +3,10 @@ import os
 time
 from typing import List, Type
 
-# Simulation settings
-SIZE: int = 20
-ZEBRA_COUNT: int = 20
-LION_COUNT: int = 5
+# 시뮬레이션 설정
+SIZE = 50
+ZEBRA_COUNT = 20
+LION_COUNT = 5
 
 # Display symbols
 EMPTY_SYMBOL: str = '.'

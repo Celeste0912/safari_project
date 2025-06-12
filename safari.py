@@ -133,17 +133,23 @@ class World:
         self.animals.extend(self.new_animals)
 
     def display(self) -> None:
-        # 打印列号，每个数字后跟空格
-        print('   ' + ' '.join(f'{i:02}' for i in range(SIZE)))
+        # 打印列号及顶边框
+        header = '   +' + '---'*SIZE + '+'
+        print(header)
+        # 列号行
+        cols = '   | ' + ' '.join(f'{i:02}' for i in range(SIZE)) + ' |'
+        print(cols)
+        print(header)
         for i, row in enumerate(self.grid):
-            # 每个格子符号后带空格，保证对齐
-            line = f'{i:02} ' + ' '.join(
+            # 每行带左右边框
+            line = f'{i:02} | ' + ' '.join(
                 ZEBRA_SYMBOL if isinstance(cell.animal, Zebra)
                 else LION_SYMBOL if isinstance(cell.animal, Lion)
                 else EMPTY_SYMBOL
                 for cell in row
-            )
+            ) + ' |'
             print(line)
+        print(header)
 
 if __name__ == '__main__':
     world = World()

@@ -2,13 +2,12 @@ import random
 import os
 
 # 시뮬레이션 설정
-SIZE = 20
+SIZE = 50
 ZEBRA_COUNT = 20
 LION_COUNT = 5
 
 # 출력 기호
 GRASS = '.'
-DIRT = '-'
 ZEBRA_SYMBOL = 'O'
 LION_SYMBOL = 'X'
 
@@ -52,26 +51,16 @@ class Animal:
 class Zebra(Animal):
     def act(self, world):
         self.age += 1
-        self.hungry += 1
 
-        # 이동 및 풀 먹기
+        # 이동
         for nx, ny in self.possible_moves(world):
             cell = world.grid[nx][ny]
             if cell.animal is None:
                 self.move_to(nx, ny, world)
-                if cell.has_grass:
-                    self.hungry = 0
-                    cell.has_grass = False
-                    cell.grass_regrow_timer = 1
                 break
 
-        # 굶어 죽음
-        if self.hungry >= 3:
-            world.grid[self.x][self.y].animal = None
-            return
-
-        # 번식
-        if self.age >= 3:
+        # 번식 (만 3살 이후부터 매년)
+        if self.age >= 4:
             for nx, ny in self.possible_moves(world):
                 cell = world.grid[nx][ny]
                 if cell.animal is None:
@@ -81,12 +70,16 @@ class Zebra(Animal):
                     break
 
 class Lion(Animal):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.hungry = 0
+
     def act(self, world):
         self.age += 1
         self.hungry += 1
         moved = False
 
-        # 사냥 (Zebra 우선)
+        # 사냥
         for nx, ny in self.possible_moves(world):
             cell = world.grid[nx][ny]
             if isinstance(cell.animal, Zebra):
@@ -96,7 +89,6 @@ class Lion(Animal):
                 moved = True
                 break
 
-        # 사냥 실패 시 빈칸 이동
         if not moved:
             for nx, ny in self.possible_moves(world):
                 cell = world.grid[nx][ny]
@@ -109,8 +101,8 @@ class Lion(Animal):
             world.grid[self.x][self.y].animal = None
             return
 
-        # 번식
-        if self.age >= 5:
+        # 번식 (만 5살 이후부터 매년)
+        if self.age >= 6:
             for nx, ny in self.possible_moves(world):
                 cell = world.grid[nx][ny]
                 if cell.animal is None:
@@ -167,8 +159,6 @@ class World:
                     line += f' {LION_SYMBOL} '
                 elif cell.has_grass:
                     line += f' {GRASS} '
-                else:
-                    line += f' {DIRT} '
             line += '|'
             print(line)
         print('   +' + '-' * (SIZE * 3) + '+')

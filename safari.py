@@ -59,7 +59,7 @@ class Zebra(Animal):
                 break
 
         # 繁殖：每4步一次
-        if self.age > 0 and self.age % 4 == 0:
+        if self.age % 4 == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     baby = Zebra(nx, ny)
@@ -96,7 +96,7 @@ class Lion(Animal):
             return
 
         # 繁殖：每6步一次
-        if self.age > 0 and self.age % 6 == 0:
+        if self.age % 6 == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     baby = Lion(nx, ny)
@@ -133,14 +133,16 @@ class World:
         self.animals.extend(self.new_animals)
 
     def display(self) -> None:
-        header = '   ' + ''.join(f'{i:02}' for i in range(SIZE))
-        print(header)
+        # 打印列号，每个数字后跟空格
+        print('   ' + ' '.join(f'{i:02}' for i in range(SIZE)))
         for i, row in enumerate(self.grid):
-            line = f'{i:02} '
-            for cell in row:
-                if isinstance(cell.animal, Zebra): line += ZEBRA_SYMBOL
-                elif isinstance(cell.animal, Lion): line += LION_SYMBOL
-                else: line += EMPTY_SYMBOL
+            # 每个格子符号后带空格，保证对齐
+            line = f'{i:02} ' + ' '.join(
+                ZEBRA_SYMBOL if isinstance(cell.animal, Zebra)
+                else LION_SYMBOL if isinstance(cell.animal, Lion)
+                else EMPTY_SYMBOL
+                for cell in row
+            )
             print(line)
 
 if __name__ == '__main__':

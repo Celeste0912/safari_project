@@ -3,14 +3,12 @@ import os
 from typing import List, Type, Optional
 
 # Simulation settings
-SIZE = 20
+SIZE = 50
 ZEBRA_COUNT = 20
 LION_COUNT = 5
 ZEBRA_REPRO_INTERVAL = 3   # 斑马繁殖间隔（步），每3步一次
 LION_REPRO_INTERVAL = 5    # 狮子繁殖间隔（步），每5步一次
 LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步）
-ZEBRA_MAX_AGE = 12         # 斑马最大存活步数
-LION_MAX_AGE = 20          # 狮子最大存活步数
 
 # Display symbols
 EMPTY_SYMBOL = '-'
@@ -53,15 +51,13 @@ class Animal:
         raise NotImplementedError
 
 class Zebra(Animal):
-    """斑马：移动、繁殖与基于年龄死亡"""
+    """斑马：移动、繁殖"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        if self.age >= ZEBRA_MAX_AGE:
-            world.grid[self.x][self.y].animal = None
-            return
 
         for nx, ny in self.possible_moves(world):
             if world.grid[nx][ny].animal is None:
+              
                 self.move_to(nx, ny, world)
                 break
 
@@ -74,12 +70,9 @@ class Zebra(Animal):
                     break
 
 class Lion(Animal):
-    """狮子：捕食斑马、移动、繁殖与饥饿、年龄死亡"""
+    """狮子：捕食斑马、移动、繁殖与饥饿死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        if self.age >= LION_MAX_AGE:
-            world.grid[self.x][self.y].animal = None
-            return
 
         hunted: bool = False
         for nx, ny in self.possible_moves(world):

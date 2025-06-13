@@ -78,39 +78,39 @@ class Lion(Animal):
 
     def act(self, world: 'World') -> None:
         self.age += 1
-        self.hunger += 1
-
-        # 优先捕食相邻斑马
+        # 在行为开始时尝试捕食
         hunted: bool = False
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
             if isinstance(target, Zebra):
+                # 捕食并移动
                 world.grid[nx][ny].animal = None
                 self.move_to(nx, ny, world)
-                self.hunger = 0
                 hunted = True
+                self.hunger = 0
                 break
 
-        # 若未捕食，则移动到空格
+        # 若未捕食，则移动到空格并增加饥饿
         if not hunted:
+            self.hunger += 1
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
 
-        # 饥饿死亡
-        if self.hunger >= LION_HUNGER_LIMIT:
-            world.grid[self.x][self.y].animal = None
-            return
-
-        # 繁殖：每 LION_REPRO_INTERVAL 步一次
+        # 繁殖：每 LION_REPRO_INTERVAL 步一次，不受饥饿死亡顺序影响
         if self.age % LION_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
-                    baby = Lion(nx, ny)
-                    world.grid[nx][ny].animal = baby
-                    world.new_animals.append(baby)
+                    cub = Lion(nx, ny)
+                    world.grid[nx][ny].animal = cub
+                    world.new_animals.append(cub)
                     break
+
+        # 饥饿死亡检查，放在繁殖之后保证繁殖机会
+        if self.hunger >= LION_HUNGER_LIMIT:
+            world.grid[self.x][self.y].animal = None
+            return
 
 class World:
     """管理生态系统的网格和动物列表"""
@@ -126,27 +126,25 @@ class World:
             while True:
                 x, y = random.randrange(SIZE), random.randrange(SIZE)
                 if self.grid[x][y].animal is None:
-                    creature = cls(x, y)
-                    self.grid[x][y].animal = creature
-                    self.animals.append(creature)
+                    animal = cls(x, y)
+                    self.grid[x][y].animal = animal
+                    self.animals.append(animal)
                     break
 
     def step(self) -> None:
         random.shuffle(self.animals)
         self.new_animals = []
-        for creature in list(self.animals):
-            if self.grid[creature.x][creature.y].animal is creature:
-                creature.act(self)
-        # 更新动物列表
+        for animal in list(self.animals):
+            if self.grid[animal.x][animal.y].animal is animal:
+                animal.act(self)
+        # 更新动物列表，加入新生个体
         self.animals = [cell.animal for row in self.grid for cell in row if cell.animal]
         self.animals.extend(self.new_animals)
 
     def display(self) -> None:
-        # 打印列号及顶框
         print('   +' + '---'*SIZE + '+')
         print('   | ' + ' '.join(f'{i:02}' for i in range(SIZE)) + ' |')
         print('   +' + '---'*SIZE + '+')
-        # 打印内容行
         for i, row in enumerate(self.grid):
             line = f'{i:02} | ' + ' '.join(
                 ZEBRA_SYMBOL if isinstance(cell.animal, Zebra)

@@ -26,7 +26,7 @@ class Animal:
         self.x: int = x
         self.y: int = y
         self.age: int = 0
-        self.hunger: int = 0  # 仅用于狮子
+        self.hunger: int = 0
 
     def move_to(self, nx: int, ny: int, world: 'World') -> None:
         world.grid[self.x][self.y].animal = None

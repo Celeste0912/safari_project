@@ -56,18 +56,15 @@ class Zebra(Animal):
     """斑马：移动、繁殖与基于年龄死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        # 年龄死亡
         if self.age >= ZEBRA_MAX_AGE:
             world.grid[self.x][self.y].animal = None
             return
 
-        # 随机移动到空格
         for nx, ny in self.possible_moves(world):
             if world.grid[nx][ny].animal is None:
                 self.move_to(nx, ny, world)
                 break
 
-        # 繁殖：每 ZEBRA_REPRO_INTERVAL 步一次
         if self.age % ZEBRA_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -80,13 +77,11 @@ class Lion(Animal):
     """狮子：捕食斑马、移动、繁殖与饥饿、年龄死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        # 年龄死亡
         if self.age >= LION_MAX_AGE:
             world.grid[self.x][self.y].animal = None
             return
 
         hunted: bool = False
-        # 优先捕食相邻斑马
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
             if isinstance(target, Zebra):
@@ -96,20 +91,16 @@ class Lion(Animal):
                 self.hunger = 0
                 break
 
-        # 若未捕食，则饥饿+1并移动
         if not hunted:
             self.hunger += 1
+            if self.hunger >= LION_HUNGER_LIMIT:
+                world.grid[self.x][self.y].animal = None
+                return
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
 
-        # 饥饿死亡
-        if self.hunger >= LION_HUNGER_LIMIT:
-            world.grid[self.x][self.y].animal = None
-            return
-
-        # 繁殖：每 LION_REPRO_INTERVAL 步一次
         if self.age % LION_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -143,7 +134,6 @@ class World:
         for creature in list(self.animals):
             if self.grid[creature.x][creature.y].animal is creature:
                 creature.act(self)
-        # 更新动物列表，加入新生个体
         self.animals = [cell.animal for row in self.grid for cell in row if cell.animal]
         self.animals.extend(self.new_animals)
 

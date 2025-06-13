@@ -3,15 +3,17 @@ import os
 from typing import List, Type, Optional
 
 # Simulation settings
-SIZE: int = 20
-ZEBRA_COUNT: int = 20
-LION_COUNT: int = 5
-LION_HUNGER_LIMIT: int = 5  # 狮子饥饿上限（步）
+SIZE = 20
+ZEBRA_COUNT = 20
+LION_COUNT = 5
+ZEBRA_REPRO_INTERVAL = 3   # 斑马繁殖间隔（步），每3步一次
+LION_REPRO_INTERVAL = 5    # 狮子繁殖间隔（步），每5步一次
+LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步），固定为5步
 
 # Display symbols
-EMPTY_SYMBOL: str = '-'
-ZEBRA_SYMBOL: str = 'O'
-LION_SYMBOL: str = 'X'
+EMPTY_SYMBOL = '-'
+ZEBRA_SYMBOL = 'O'
+LION_SYMBOL = 'X'
 
 
 def clear_screen() -> None:
@@ -53,19 +55,19 @@ class Zebra(Animal):
     def act(self, world: 'World') -> None:
         self.age += 1
 
-        # 移动到随机空格
+        # 随机移动到空格
         for nx, ny in self.possible_moves(world):
             if world.grid[nx][ny].animal is None:
                 self.move_to(nx, ny, world)
                 break
 
-        # 繁殖：每4步一次
-        if self.age % 4 == 0:
+        # 繁殖：每 ZEBRA_REPRO_INTERVAL 步一次
+        if self.age % ZEBRA_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
-                    offspring = Zebra(nx, ny)
-                    world.grid[nx][ny].animal = offspring
-                    world.new_animals.append(offspring)
+                    baby = Zebra(nx, ny)
+                    world.grid[nx][ny].animal = baby
+                    world.new_animals.append(baby)
                     break
 
 class Lion(Animal):
@@ -78,7 +80,7 @@ class Lion(Animal):
         self.age += 1
         self.hunger += 1
 
-        # 捕食斑马
+        # 优先捕食相邻斑马
         hunted: bool = False
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
@@ -89,7 +91,7 @@ class Lion(Animal):
                 hunted = True
                 break
 
-        # 未捕食则随机移动
+        # 若未捕食，则移动到空格
         if not hunted:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -101,13 +103,13 @@ class Lion(Animal):
             world.grid[self.x][self.y].animal = None
             return
 
-        # 繁殖：每6步一次
-        if self.age % 6 == 0:
+        # 繁殖：每 LION_REPRO_INTERVAL 步一次
+        if self.age % LION_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
-                    offspring = Lion(nx, ny)
-                    world.grid[nx][ny].animal = offspring
-                    world.new_animals.append(offspring)
+                    baby = Lion(nx, ny)
+                    world.grid[nx][ny].animal = baby
+                    world.new_animals.append(baby)
                     break
 
 class World:

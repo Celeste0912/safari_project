@@ -10,6 +10,7 @@ ZEBRA_REPRO_INTERVAL = 3   # 斑马繁殖间隔（步），每3步一次
 LION_REPRO_INTERVAL = 5    # 狮子繁殖间隔（步），每5步一次
 LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步）
 ZEBRA_MAX_AGE = 12         # 斑马最大存活步数
+LION_MAX_AGE = 20          # 狮子最大存活步数
 
 # Display symbols
 EMPTY_SYMBOL = '-'
@@ -76,28 +77,37 @@ class Zebra(Animal):
                     break
 
 class Lion(Animal):
-    """狮子：捕食斑马、移动、繁殖与饥饿死亡"""
+    """狮子：捕食斑马、移动、繁殖与饥饿、年龄死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
-        self.hunger += 1
-        hunted: bool = False
+        # 年龄死亡
+        if self.age >= LION_MAX_AGE:
+            world.grid[self.x][self.y].animal = None
+            return
 
+        hunted: bool = False
         # 优先捕食相邻斑马
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
             if isinstance(target, Zebra):
                 world.grid[nx][ny].animal = None
                 self.move_to(nx, ny, world)
-                self.hunger = 0
                 hunted = True
+                self.hunger = 0
                 break
 
-        # 若未捕食，则移动
+        # 若未捕食，则饥饿+1并移动
         if not hunted:
+            self.hunger += 1
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
+
+        # 饥饿死亡
+        if self.hunger >= LION_HUNGER_LIMIT:
+            world.grid[self.x][self.y].animal = None
+            return
 
         # 繁殖：每 LION_REPRO_INTERVAL 步一次
         if self.age % LION_REPRO_INTERVAL == 0:
@@ -107,11 +117,6 @@ class Lion(Animal):
                     world.grid[nx][ny].animal = cub
                     world.new_animals.append(cub)
                     break
-
-        # 饥饿死亡
-        if self.hunger >= LION_HUNGER_LIMIT:
-            world.grid[self.x][self.y].animal = None
-            return
 
 class World:
     """管理生态系统的网格和动物列表"""

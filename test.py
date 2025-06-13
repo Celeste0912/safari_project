@@ -8,7 +8,8 @@ ZEBRA_COUNT = 20
 LION_COUNT = 5
 ZEBRA_REPRO_INTERVAL = 3   # 斑马繁殖间隔（步），每3步一次
 LION_REPRO_INTERVAL = 5    # 狮子繁殖间隔（步），每5步一次
-LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步），固定为5步
+LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步）
+ZEBRA_MAX_AGE = 12         # 斑马最大存活步数
 
 # Display symbols
 EMPTY_SYMBOL = '-'
@@ -51,9 +52,13 @@ class Animal:
         raise NotImplementedError
 
 class Zebra(Animal):
-    """斑马：移动与繁殖（无老化死亡）"""
+    """斑马：移动、繁殖与基于年龄死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
+        # 年龄死亡
+        if self.age >= ZEBRA_MAX_AGE:
+            world.grid[self.x][self.y].animal = None
+            return
 
         # 随机移动到空格
         for nx, ny in self.possible_moves(world):
@@ -72,33 +77,29 @@ class Zebra(Animal):
 
 class Lion(Animal):
     """狮子：捕食斑马、移动、繁殖与饥饿死亡"""
-    def __init__(self, x: int, y: int) -> None:
-        super().__init__(x, y)
-        self.hunger = 0
-
     def act(self, world: 'World') -> None:
         self.age += 1
-        # 在行为开始时尝试捕食
+        self.hunger += 1
         hunted: bool = False
+
+        # 优先捕食相邻斑马
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
             if isinstance(target, Zebra):
-                # 捕食并移动
                 world.grid[nx][ny].animal = None
                 self.move_to(nx, ny, world)
-                hunted = True
                 self.hunger = 0
+                hunted = True
                 break
 
-        # 若未捕食，则移动到空格并增加饥饿
+        # 若未捕食，则移动
         if not hunted:
-            self.hunger += 1
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
                     self.move_to(nx, ny, world)
                     break
 
-        # 繁殖：每 LION_REPRO_INTERVAL 步一次，不受饥饿死亡顺序影响
+        # 繁殖：每 LION_REPRO_INTERVAL 步一次
         if self.age % LION_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -107,7 +108,7 @@ class Lion(Animal):
                     world.new_animals.append(cub)
                     break
 
-        # 饥饿死亡检查，放在繁殖之后保证繁殖机会
+        # 饥饿死亡
         if self.hunger >= LION_HUNGER_LIMIT:
             world.grid[self.x][self.y].animal = None
             return
@@ -126,17 +127,17 @@ class World:
             while True:
                 x, y = random.randrange(SIZE), random.randrange(SIZE)
                 if self.grid[x][y].animal is None:
-                    animal = cls(x, y)
-                    self.grid[x][y].animal = animal
-                    self.animals.append(animal)
+                    creature = cls(x, y)
+                    self.grid[x][y].animal = creature
+                    self.animals.append(creature)
                     break
 
     def step(self) -> None:
         random.shuffle(self.animals)
         self.new_animals = []
-        for animal in list(self.animals):
-            if self.grid[animal.x][animal.y].animal is animal:
-                animal.act(self)
+        for creature in list(self.animals):
+            if self.grid[creature.x][creature.y].animal is creature:
+                creature.act(self)
         # 更新动物列表，加入新生个体
         self.animals = [cell.animal for row in self.grid for cell in row if cell.animal]
         self.animals.extend(self.new_animals)

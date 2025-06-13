@@ -3,9 +3,9 @@ import os
 from typing import List, Type, Optional
 
 # Simulation settings
-SIZE = 20
-ZEBRA_COUNT = 20
-LION_COUNT = 5
+SIZE = 50
+ZEBRA_COUNT = 100
+LION_COUNT = 25
 ZEBRA_REPRO_INTERVAL = 3   # 斑马繁殖间隔（步），每3步一次
 LION_REPRO_INTERVAL = 5    # 狮子繁殖间隔（步），每5步一次
 LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步）

@@ -2,15 +2,13 @@ import random
 import os
 from typing import List, Type, Optional
 
-# Simulation settings
 SIZE = 50
 ZEBRA_COUNT = 100
 LION_COUNT = 25
-ZEBRA_REPRO_INTERVAL = 3   # 斑马繁殖间隔（步），每3步一次
-LION_REPRO_INTERVAL = 5    # 狮子繁殖间隔（步），每5步一次
-LION_HUNGER_LIMIT = 5      # 狮子饥饿上限（步）
+ZEBRA_REPRO_INTERVAL = 3   
+LION_REPRO_INTERVAL = 5    
+LION_HUNGER_LIMIT = 5      
 
-# Display symbols
 EMPTY_SYMBOL = '-'
 ZEBRA_SYMBOL = 'O'
 LION_SYMBOL = 'X'
@@ -20,7 +18,6 @@ def clear_screen() -> None:
     os.system('cls' if os.name == 'nt' else 'clear')
 
 class Cell:
-    """地图单元格：仅管理动物"""
     def __init__(self) -> None:
         self.animal: Optional[Animal] = None
 

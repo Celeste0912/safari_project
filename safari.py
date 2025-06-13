@@ -22,7 +22,6 @@ class Cell:
         self.animal: Optional[Animal] = None
 
 class Animal:
-    """基类：管理位置与行动"""
     def __init__(self, x: int, y: int) -> None:
         self.x: int = x
         self.y: int = y
@@ -48,7 +47,6 @@ class Animal:
         raise NotImplementedError
 
 class Zebra(Animal):
-    """斑马：移动、繁殖"""
     def act(self, world: 'World') -> None:
         self.age += 1
 
@@ -67,7 +65,6 @@ class Zebra(Animal):
                     break
 
 class Lion(Animal):
-    """狮子：捕食斑马、移动、繁殖与饥饿死亡"""
     def act(self, world: 'World') -> None:
         self.age += 1
 
@@ -100,7 +97,6 @@ class Lion(Animal):
                     break
 
 class World:
-    """管理生态系统的网格和动物列表"""
     def __init__(self) -> None:
         self.grid: List[List[Cell]] = [[Cell() for _ in range(SIZE)] for _ in range(SIZE)]
         self.animals: List[Animal] = []

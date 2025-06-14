@@ -13,7 +13,6 @@ EMPTY_SYMBOL = '-'
 ZEBRA_SYMBOL = 'O'
 LION_SYMBOL = 'X'
 
-
 def clear_screen() -> None:
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -33,13 +32,13 @@ class Animal:
         self.x, self.y = nx, ny
         world.grid[nx][ny].animal = self
 
-    def possible_moves(self, world: 'World') -> List[tuple]:
-        directions = [(-1,0),(1,0),(0,-1),(0,1)]
-        moves: List[tuple] = []
-        for dx, dy in directions:
-            nx, ny = self.x + dx, self.y + dy
-            if 0 <= nx < SIZE and 0 <= ny < SIZE:
-                moves.append((nx, ny))
+    def possible_moves(self, world: 'World') -> list[tuple]:  # 移动到Animal类内部
+        directions = [(-1,0), (1,0), (0,-1), (0,1)]
+        moves = [
+            (self.x + dx, self.y + dy)
+            for dx, dy in directions
+            if 0 <= self.x + dx < SIZE and 0 <= self.y + dy < SIZE
+        ]
         random.shuffle(moves)
         return moves
 
@@ -50,12 +49,13 @@ class Zebra(Animal):
     def act(self, world: 'World') -> None:
         self.age += 1
 
+        # 移动逻辑
         for nx, ny in self.possible_moves(world):
             if world.grid[nx][ny].animal is None:
-              
                 self.move_to(nx, ny, world)
                 break
 
+        # 繁殖逻辑
         if self.age % ZEBRA_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -67,8 +67,9 @@ class Zebra(Animal):
 class Lion(Animal):
     def act(self, world: 'World') -> None:
         self.age += 1
+        hunted = False
 
-        hunted: bool = False
+        # 捕猎逻辑
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
             if isinstance(target, Zebra):
@@ -78,6 +79,7 @@ class Lion(Animal):
                 self.hunger = 0
                 break
 
+        # 移动和饥饿逻辑
         if not hunted:
             self.hunger += 1
             if self.hunger >= LION_HUNGER_LIMIT:
@@ -88,6 +90,7 @@ class Lion(Animal):
                     self.move_to(nx, ny, world)
                     break
 
+        # 繁殖逻辑
         if self.age % LION_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -124,18 +127,25 @@ class World:
         self.animals.extend(self.new_animals)
 
     def display(self) -> None:
-        print('   +' + '---'*SIZE + '+')
-        print('   | ' + ' '.join(f'{i:02}' for i in range(SIZE)) + ' |')
+    # 列号对齐，每列3字符宽度，和内容完全一致
+        print('    ', end='')
+        for i in range(SIZE):
+            print(f'{i:>3}', end='')
+        print()
         print('   +' + '---'*SIZE + '+')
         for i, row in enumerate(self.grid):
-            line = f'{i:02} | ' + ' '.join(
-                ZEBRA_SYMBOL if isinstance(cell.animal, Zebra)
-                else LION_SYMBOL if isinstance(cell.animal, Lion)
-                else EMPTY_SYMBOL
-                for cell in row
-            ) + ' |'
-            print(line)
+            print(f'{i:02} |', end='')
+            for cell in row:
+                if isinstance(cell.animal, Zebra):
+                    print(f' {ZEBRA_SYMBOL} ', end='')
+                elif isinstance(cell.animal, Lion):
+                    print(f' {LION_SYMBOL} ', end='')
+                else:
+                    print(f' {EMPTY_SYMBOL} ', end='')
+            print('|')
         print('   +' + '---'*SIZE + '+')
+
+
 
 if __name__ == '__main__':
     world = World()

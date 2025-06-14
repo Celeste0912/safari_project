@@ -6,8 +6,7 @@ SIZE = 50
 ZEBRA_COUNT = 100
 LION_COUNT = 25
 ZEBRA_REPRO_INTERVAL = 3   
-LION_REPRO_INTERVAL = 5    
-LION_HUNGER_LIMIT = 5      
+LION_REPRO_INTERVAL = 5       
 
 EMPTY_SYMBOL = '-'
 ZEBRA_SYMBOL = 'O'
@@ -78,7 +77,7 @@ class Lion(Animal):
 
         if not hunted:
             self.hunger += 1
-            if self.hunger >= LION_HUNGER_LIMIT:
+            if self.hunger >= 5:
                 world.grid[self.x][self.y].animal = None
                 return
             for nx, ny in self.possible_moves(world):

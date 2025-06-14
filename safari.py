@@ -32,7 +32,7 @@ class Animal:
         self.x, self.y = nx, ny
         world.grid[nx][ny].animal = self
 
-    def possible_moves(self, world: 'World') -> list[tuple]:  # 移动到Animal类内部
+    def possible_moves(self, world: 'World') -> list[tuple]:
         directions = [(-1,0), (1,0), (0,-1), (0,1)]
         moves = [
             (self.x + dx, self.y + dy)
@@ -49,13 +49,11 @@ class Zebra(Animal):
     def act(self, world: 'World') -> None:
         self.age += 1
 
-        # 移动逻辑
         for nx, ny in self.possible_moves(world):
             if world.grid[nx][ny].animal is None:
                 self.move_to(nx, ny, world)
                 break
 
-        # 繁殖逻辑
         if self.age % ZEBRA_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -69,7 +67,6 @@ class Lion(Animal):
         self.age += 1
         hunted = False
 
-        # 捕猎逻辑
         for nx, ny in self.possible_moves(world):
             target = world.grid[nx][ny].animal
             if isinstance(target, Zebra):
@@ -79,7 +76,6 @@ class Lion(Animal):
                 self.hunger = 0
                 break
 
-        # 移动和饥饿逻辑
         if not hunted:
             self.hunger += 1
             if self.hunger >= LION_HUNGER_LIMIT:
@@ -90,7 +86,6 @@ class Lion(Animal):
                     self.move_to(nx, ny, world)
                     break
 
-        # 繁殖逻辑
         if self.age % LION_REPRO_INTERVAL == 0:
             for nx, ny in self.possible_moves(world):
                 if world.grid[nx][ny].animal is None:
@@ -127,7 +122,6 @@ class World:
         self.animals.extend(self.new_animals)
 
     def display(self) -> None:
-    # 列号对齐，每列3字符宽度，和内容完全一致
         print('    ', end='')
         for i in range(SIZE):
             print(f'{i:>3}', end='')

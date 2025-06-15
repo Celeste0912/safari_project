@@ -138,8 +138,6 @@ class World:
             print('|')
         print('   +' + '---'*SIZE + '+')
 
-
-
 if __name__ == '__main__':
     world = World()
     iteration = 0
